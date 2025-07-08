@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Основные цвета -->
+    <color name="colorPrimary">#FFA726</color> <!-- Оранжевый -->
+    <color name="colorOnPrimary">#FFFFFF</color> <!-- Белый текст на кнопке -->
+    <color name="colorSecondary">#FB8C00</color> <!-- Более тёмный оранжевый -->
+    <color name="colorOnSecondary">#FFFFFF</color>
+
+    <!-- Фон и текст -->
+    <color name="colorBackground">#FFFFFF</color>
+    <color name="colorSurface">#FFFFFF</color>
+    <color name="colorOnBackground">#212121</color> <!-- Чёрный -->
+    <color name="colorOnSurface">#212121</color>
+
+    <!-- Ошибки -->
+    <color name="colorError">#D32F2F</color>
+    <color name="colorOnError">#FFFFFF</color>
+</resources>

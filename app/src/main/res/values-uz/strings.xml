@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">GoGo Delivery</string>
+    <string name="login">--- UZBEK TEST ---</string>
+    <string name="password">Parol</string>
+    <string name="phone_number">Telefon raqami</string>
+    <string name="toggle_password_visibility">Parolni ko\'rsatish/yashirish</string>
+    <string name="welcome_user">Salom, %1$s!</string>
+    <string name="settings">Sozlamalar</string>
+    <string name="logout">Hisobdan chiqish</string>
+    <string name="avatar">Avatar</string>
+    <string name="nav_shops">Do\'konlar</string>
+    <string name="nav_profile">Profil</string>
+    <string name="nav_new">Yangilar</string>
+    <string name="nav_active">Faol</string>
+    <string name="nav_history">Tarix</string>
+    <string name="route">Marshrut</string>
+    <string name="call">Qo\'ng\'iroq qilish</string>
+    <string name="error_loading">Yuklashda xatolik: %1$s</string>
+    <string name="loading">Yuklanmoqda…</string>
+    <string name="scan_product">Mahsulotni skanerlash</string>
+    <string name="no_stores_found">Qabul qilish uchun do\'konlar topilmadi.</string>
+    <string name="items_to_receive">Qabul qilinadigan tovarlar: %1$s</string>
+</resources>

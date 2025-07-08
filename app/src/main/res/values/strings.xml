@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">GoGo Delivery</string>
+
+
+    <string name="login">Войти</string>
+    <string name="password">Пароль</string>
+    <string name="phone_number">Номер телефона</string>
+    <string name="toggle_password_visibility">Показать/скрыть пароль</string>
+
+    <string name="welcome_user">Привет, %1$s!</string>
+    <string name="settings">Настройки</string>
+    <string name="logout">Выйти из аккаунта</string>
+    <string name="avatar">Аватар</string>
+
+    <string name="nav_shops">Магазины</string>
+    <string name="nav_profile">Профиль</string>
+    <string name="nav_new">Новые</string>
+    <string name="nav_active">Активные</string>
+    <string name="nav_history">История</string>
+
+    <string name="route">Маршрут</string>
+    <string name="call">Позвонить</string>
+    <string name="error_loading">Ошибка загрузки: %1$s</string>
+    <string name="loading">Загрузка…</string>
+    <string name="scan_product">Сканировать товар</string>
+
+    <string name="no_stores_found">Нет магазинов для получения товаров.</string>
+    <string name="items_to_receive">Товаров к получению: %1$s</string>
+
+
+
+
+</resources>
