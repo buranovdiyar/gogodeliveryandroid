@@ -91,10 +91,22 @@ fun OrderToDeliverDetailScreen(
                                 StyledDetailChip(text = "Заказ #${details.order.id}", color = Color(0xFFFF6B00))
                             }
                         }
+
+                        // ✅ ИЗМЕНЕНИЕ: Заголовок "КЛИЕНТ" вынесен сюда
+                        item {
+                            Text(text = "КЛИЕНТ", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = Color.Gray)
+                        }
                         item { ClientInfoSection(client = details.user) }
+
+                        // ✅ ИЗМЕНЕНИЕ: Заголовок "АДРЕС ДОСТАВКИ" вынесен сюда
+                        item {
+                            Text(text = "АДРЕС ДОСТАВКИ", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = Color.Gray)
+                        }
                         item { AddressSection(address = details.address, phoneNumber = details.user.phoneNumber) }
+
                         item { Text(text = "ТОВАРЫ В ЗАКАЗЕ", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = Color.Gray) }
                         items(details.items) { item -> OrderItemRow(item = item) }
+
                         item {
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(onClick = { navController.navigate("scan/confirm_delivery") }, modifier = Modifier.fillMaxWidth().height(50.dp)) {
@@ -119,19 +131,18 @@ private fun StyledDetailChip(text: String, modifier: Modifier = Modifier, color:
     )
 }
 
-// ✅ ИЗМЕНЕНИЕ: Убрана иконка звонка
+// ✅ ИЗМЕНЕНИЕ: Убран заголовок из карточки
 @Composable
 private fun ClientInfoSection(client: OrderClientInfo) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("КЛИЕНТ", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = Color.Gray)
             DetailRow(icon = Icons.Default.Person, title = "Имя", value = "${client.firstName} ${client.lastName}")
             DetailRow(icon = Icons.Default.Phone, title = "Телефон", value = formatPhoneNumberForDisplay(client.phoneNumber))
         }
     }
 }
 
-// ✅ ИЗМЕНЕНИЕ: Возвращена кнопка "Позвонить"
+// ✅ ИЗМЕНЕНИЕ: Убран заголовок из карточки
 @Composable
 private fun AddressSection(address: OrderAddress, phoneNumber: String) {
     val context = LocalContext.current
@@ -143,7 +154,6 @@ private fun AddressSection(address: OrderAddress, phoneNumber: String) {
 
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text("АДРЕС ДОСТАВКИ", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = Color.Gray)
             DetailRow(icon = Icons.Default.Place, title = "Адрес", value = fullAddress)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (address.latitude != null && address.longitude != null) {

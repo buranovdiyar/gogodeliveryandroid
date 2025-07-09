@@ -88,12 +88,13 @@ fun ProfileScreen(
                     .offset(x = (-1 * index).dp)
                     .zIndex(if (isSelected) 1f else 0f)
 
+
                 OutlinedButton(
                     onClick = {
                         selectedIndex = index
                         scope.launch {
-                            // Просто сохраняем язык. Остальное произойдет автоматически.
-                            Log.d("LANGUAGE_DEBUG", "Сохраняю язык: $langCode")
+                            // Просто сохраняем новый язык в Preferences.
+                            // MainActivity отреагирует на это изменение.
                             viewModel.userPreferences.saveLanguage(langCode)
                         }
                     },

@@ -71,7 +71,7 @@ dependencies {
     implementation("androidx.compose.material:material:1.6.8")
     // ML Kit (Barcode)
     implementation ("com.google.mlkit:barcode-scanning:17.2.0")
-    implementation ("com.google.mlkit:barcode-scanning:17.1.0")
+
 // CameraX
 
     implementation ("androidx.camera:camera-core:1.3.0")
