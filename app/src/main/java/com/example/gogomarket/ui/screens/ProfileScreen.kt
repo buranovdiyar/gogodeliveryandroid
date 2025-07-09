@@ -92,12 +92,9 @@ fun ProfileScreen(
                     onClick = {
                         selectedIndex = index
                         scope.launch {
-                            // 1. Сохраняем выбор в DataStore
+                            // Просто сохраняем язык. Остальное произойдет автоматически.
                             Log.d("LANGUAGE_DEBUG", "Сохраняю язык: $langCode")
                             viewModel.userPreferences.saveLanguage(langCode)
-
-                            // 2. Принудительно пересоздаем Activity для применения языка
-//                            (context as? Activity)?.recreate()
                         }
                     },
                     shape = shape,

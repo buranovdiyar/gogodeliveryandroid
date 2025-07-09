@@ -176,8 +176,10 @@ data class OrderItem(
     val id: String,
     val title: String,
     val image: ImageInfo?,
-    val qty: Int
+    val qty: Int,
+    val status: Int // <-- ДОБАВЬТЕ ЭТУ СТРОКУ
 )
+
 
 data class ImageInfo(
     val url: String?

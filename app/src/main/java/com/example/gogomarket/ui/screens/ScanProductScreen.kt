@@ -1,11 +1,9 @@
+// ScanProductScreen.kt
 package com.example.gogomarket.ui.screens
 
 import android.Manifest
-import android.content.pm.PackageManager
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
@@ -33,11 +31,15 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.example.gogomarket.viewmodel.CourierViewModel
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
+import com.google.accompanist.permissions.shouldShowRationale
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executors
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun ScanProductScreen(
     scanType: String,
@@ -45,195 +47,136 @@ fun ScanProductScreen(
     navController: NavController
 ) {
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
-    var hasCamPermission by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.CAMERA
-            ) == PackageManager.PERMISSION_GRANTED
-        )
-    }
+    // Используем Accompanist для управления разрешением
+    val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
 
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-        onResult = { granted ->
-            hasCamPermission = granted
-            if (!granted) {
-                Toast.makeText(context, "Разрешение на камеру необходимо для сканирования", Toast.LENGTH_LONG).show()
-                navController.popBackStack()
-            }
+    // Этот блок запускается один раз, чтобы запросить разрешение
+    LaunchedEffect(Unit) {
+        if (!cameraPermissionState.status.isGranted) {
+            cameraPermissionState.launchPermissionRequest()
         }
-    )
-
-    LaunchedEffect(key1 = true) {
-        if (!hasCamPermission) {
-            launcher.launch(Manifest.permission.CAMERA)
-        }
-    }
-
-    // ✅ Определяем текст подсказки в зависимости от типа сканирования
-    val instructionText = when (scanType) {
-        "warehouse", "product" -> "Наведите камеру на штрихкод товара"
-        "confirm_delivery" -> "Наведите камеру на QR-код клиента"
-        else -> "Наведите камеру на код"
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Сканирование") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
-                    }
-                },
-                // ✅ Улучшаем цвета для контраста
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Black.copy(alpha = 0.7f),
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
-                )
+                navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.Default.ArrowBack, contentDescription = "Назад") } },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black.copy(alpha = 0.7f), titleContentColor = Color.White, navigationIconContentColor = Color.White)
             )
         },
-        // ✅ Убираем фон по умолчанию у Scaffold, чтобы камера была видна
         containerColor = Color.Black
     ) { padding ->
-        Column(modifier = Modifier
-            .padding(padding)
-            .fillMaxSize()
-        ) {
-            if (hasCamPermission) {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    AndroidView(
-                        factory = { context ->
-                            val previewView = PreviewView(context)
-                            val cameraExecutor = Executors.newSingleThreadExecutor()
-
-                            val analysis = ImageAnalysis.Builder()
-                                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                                .build()
-                                .apply {
-                                    setAnalyzer(cameraExecutor) { imageProxy ->
-                                        processImageProxy(
-                                            imageProxy = imageProxy,
-                                            onBarcodeScanned = { qrOrBarcode ->
-                                                this.clearAnalyzer()
-                                                cameraProviderFuture.get().unbindAll()
-
-                                                when (scanType) {
-                                                    "warehouse" -> {
-                                                        viewModel.takeOrderFromWarehouse(qrOrBarcode) { success, message ->
-                                                            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-                                                            navController.popBackStack()
-                                                        }
-                                                    }
-                                                    "confirm_delivery" -> {
-                                                        viewModel.confirmOrderDelivery(qrOrBarcode) { success, message ->
-                                                            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-                                                            navController.popBackStack()
-                                                        }
-                                                    }
-                                                    "product" -> {
-                                                        viewModel.scanProductBarcode(qrOrBarcode) { success, message ->
-                                                            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-                                                            navController.popBackStack()
-                                                        }
-                                                    }
-                                                    else -> {
-                                                        Toast.makeText(context, "Неизвестный тип сканирования: $scanType", Toast.LENGTH_LONG).show()
-                                                        navController.popBackStack()
-                                                    }
-                                                }
-                                            }
-                                        )
-                                    }
-                                }
-
-                            cameraProviderFuture.addListener({
-                                val cameraProvider = cameraProviderFuture.get()
-                                val preview = Preview.Builder().build().also {
-                                    it.setSurfaceProvider(previewView.surfaceProvider)
-                                }
-
-                                try {
-                                    cameraProvider.unbindAll()
-                                    cameraProvider.bindToLifecycle(
-                                        lifecycleOwner,
-                                        CameraSelector.DEFAULT_BACK_CAMERA,
-                                        preview,
-                                        analysis
-                                    )
-                                } catch (e: Exception) {
-                                    Log.e("ScanProductScreen", "Ошибка привязки камеры", e)
-                                }
-                            }, ContextCompat.getMainExecutor(context))
-
-                            previewView
-                        },
-                        modifier = Modifier.fillMaxSize()
-                    )
-
-                    // ✅ Заменяем старый текст на новый интерфейс сканера
-                    ScannerOverlay(instructionText = instructionText)
-                }
+        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
+            if (cameraPermissionState.status.isGranted) {
+                // Разрешение есть - показываем камеру
+                CameraView(
+                    scanType = scanType,
+                    viewModel = viewModel,
+                    navController = navController
+                )
             } else {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Нет разрешения на использование камеры.")
-                }
+                // Разрешения нет - показываем объяснение
+                PermissionDeniedView(
+                    showRationale = cameraPermissionState.status.shouldShowRationale,
+                    onRequestPermission = { cameraPermissionState.launchPermissionRequest() }
+                )
             }
         }
     }
 }
 
-// ✅ Новый Composable для рисования оверлея
+@Composable
+private fun CameraView(
+    scanType: String,
+    viewModel: CourierViewModel,
+    navController: NavController
+) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
+
+    val instructionText = when (scanType) {
+        "warehouse", "product" -> "Наведите камеру на штрихкод товара"
+        "confirm_delivery" -> "Наведите камеру на QR-код клиента"
+        else -> "Наведите камеру на код"
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        AndroidView(
+            factory = { ctx ->
+                val previewView = PreviewView(ctx)
+                val cameraExecutor = Executors.newSingleThreadExecutor()
+                val analysis = ImageAnalysis.Builder().setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST).build().apply {
+                    setAnalyzer(cameraExecutor) { imageProxy ->
+                        processImageProxy(imageProxy = imageProxy) { qrOrBarcode ->
+                            this.clearAnalyzer()
+                            cameraProviderFuture.get().unbindAll()
+                            when (scanType) {
+                                "warehouse" -> viewModel.takeOrderFromWarehouse(qrOrBarcode) { s, m -> handleScanResult(context, navController, m) }
+                                "confirm_delivery" -> viewModel.confirmOrderDelivery(qrOrBarcode) { s, m -> handleScanResult(context, navController, m) }
+                                "product" -> viewModel.scanProductBarcode(qrOrBarcode) { s, m -> handleScanResult(context, navController, m) }
+                                else -> {
+                                    Toast.makeText(context, "Неизвестный тип сканирования: $scanType", Toast.LENGTH_LONG).show()
+                                    navController.popBackStack()
+                                }
+                            }
+                        }
+                    }
+                }
+                cameraProviderFuture.addListener({
+                    val cameraProvider = cameraProviderFuture.get()
+                    val preview = Preview.Builder().build().also { it.setSurfaceProvider(previewView.surfaceProvider) }
+                    try {
+                        cameraProvider.unbindAll()
+                        cameraProvider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, analysis)
+                    } catch (e: Exception) {
+                        Log.e("ScanProductScreen", "Ошибка привязки камеры", e)
+                    }
+                }, ContextCompat.getMainExecutor(ctx))
+                previewView
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+        ScannerOverlay(instructionText = instructionText)
+    }
+}
+
+private fun handleScanResult(context: android.content.Context, navController: NavController, message: String) {
+    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+    navController.popBackStack()
+}
+
+@Composable
+private fun PermissionDeniedView(showRationale: Boolean, onRequestPermission: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = if (showRationale) "Для сканирования кодов нужен доступ к камере. Пожалуйста, предоставьте разрешение." else "Доступ к камере необходим. Откройте настройки приложения, чтобы предоставить разрешение.",
+            color = Color.White,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(onClick = onRequestPermission) {
+            Text("Запросить разрешение")
+        }
+    }
+}
+
 @Composable
 private fun ScannerOverlay(instructionText: String) {
-    // Слой для рисования рамки и фона
     Canvas(modifier = Modifier.fillMaxSize()) {
-        val canvasWidth = size.width
-        val canvasHeight = size.height
-        val rectSize = size.width * 0.7f
+        val canvasWidth = size.width; val canvasHeight = size.height; val rectSize = size.width * 0.7f
         val rectTopLeft = Offset((canvasWidth - rectSize) / 2, canvasHeight * 0.25f)
-
-        // Рисуем полупрозрачный фон
         drawRect(Color.Black.copy(alpha = 0.7f))
-
-        // "Вырезаем" прозрачное окно в центре
-        drawRoundRect(
-            topLeft = rectTopLeft,
-            size = Size(rectSize, rectSize),
-            cornerRadius = CornerRadius(16.dp.toPx(), 16.dp.toPx()),
-            color = Color.Transparent,
-            blendMode = BlendMode.Clear
-        )
-
-        // Рисуем белую рамку вокруг окна
-        drawRoundRect(
-            topLeft = rectTopLeft,
-            size = Size(rectSize, rectSize),
-            cornerRadius = CornerRadius(16.dp.toPx(), 16.dp.toPx()),
-            color = Color.White,
-            style = Stroke(width = 2.dp.toPx())
-        )
+        drawRoundRect(topLeft = rectTopLeft, size = Size(rectSize, rectSize), cornerRadius = CornerRadius(16.dp.toPx(), 16.dp.toPx()), color = Color.Transparent, blendMode = BlendMode.Clear)
+        drawRoundRect(topLeft = rectTopLeft, size = Size(rectSize, rectSize), cornerRadius = CornerRadius(16.dp.toPx(), 16.dp.toPx()), color = Color.White, style = Stroke(width = 2.dp.toPx()))
     }
-    // Слой для текста, чтобы он был поверх всего
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        // Располагаем текст ниже центра "окна" сканера
-        Text(
-            text = instructionText,
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 300.dp) // Сдвигаем текст вниз
-        )
+    Box(modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp), contentAlignment = Alignment.Center) {
+        Text(text = instructionText, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 300.dp))
     }
 }
 
@@ -243,18 +186,9 @@ private fun processImageProxy(imageProxy: ImageProxy, onBarcodeScanned: (String)
     if (mediaImage != null) {
         val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
         val scanner = BarcodeScanning.getClient()
-
         scanner.process(image)
-            .addOnSuccessListener { barcodes ->
-                barcodes.firstOrNull()?.rawValue?.let { barcodeValue ->
-                    onBarcodeScanned(barcodeValue)
-                }
-            }
-            .addOnFailureListener {
-                Log.e("ScanProductScreen", "Ошибка распознавания ML Kit", it)
-            }
-            .addOnCompleteListener {
-                imageProxy.close()
-            }
+            .addOnSuccessListener { barcodes -> barcodes.firstOrNull()?.rawValue?.let { barcodeValue -> onBarcodeScanned(barcodeValue) } }
+            .addOnFailureListener { Log.e("ScanProductScreen", "Ошибка распознавания ML Kit", it) }
+            .addOnCompleteListener { imageProxy.close() }
     }
 }
